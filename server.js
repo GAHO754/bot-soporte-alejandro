@@ -68,6 +68,7 @@ app.post("/chat", async (req, res) => {
   }
 });
 
+// 👇 devolver index.html si alguien pide /
 app.get("/", (req, res) => {
   res.sendFile(path.join(__dirname, "index.html"));
 });
