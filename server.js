@@ -11,19 +11,28 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// ⚙️ esto es para poder usar __dirname en ES modules
+// ⚙️ __dirname en ES modules
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// 👉 servir archivos estáticos (tu index.html)
-app.use(express.static(__dirname)); // sirve lo que haya en la carpeta actual
+// 👉 servir archivos estáticos (index.html, etc.)
+app.use(express.static(__dirname));
+
+// ✅ comprobar que exista la API key
+if (!process.env.OPENAI_API_KEY) {
+  console.error("❌ No se encontró OPENAI_API_KEY en las variables de entorno");
+}
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
 app.post("/chat", async (req, res) => {
-  const { messages } = req.body;
+  const { messages } = req.body || {};
+
+  if (!Array.isArray(messages)) {
+    return res.status(400).json({ error: "Formato inválido: falta 'messages'" });
+  }
 
   try {
     const completion = await openai.chat.completions.create({
@@ -49,8 +58,8 @@ app.post("/chat", async (req, res) => {
 
     res.json({ reply: completion.choices[0].message });
   } catch (err) {
-    console.error("❌ Error al generar respuesta:", err);
-    res.status(500).json({ error: "Error al generar respuesta" });
+    console.error("❌ Error al generar respuesta:", err.response?.data || err.message || err);
+    res.status(500).json({ error: "Error al generar respuesta en el servidor" });
   }
 });
 
@@ -59,7 +68,8 @@ app.get("/", (req, res) => {
   res.sendFile(path.join(__dirname, "index.html"));
 });
 
-const PORT = 3000;
+// 🔴 IMPORTANTE para Render: usar process.env.PORT
+const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-  console.log(`✅ Servidor escuchando en http://localhost:${PORT}`);
+  console.log(`✅ Servidor escuchando en puerto ${PORT}`);
 });
