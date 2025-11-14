@@ -18,7 +18,7 @@ const __dirname = path.dirname(__filename);
 // 👉 servir archivos estáticos (index.html, etc.)
 app.use(express.static(__dirname));
 
-// ✅ comprobar que exista la API key
+// 🔍 log si falta la API key
 if (!process.env.OPENAI_API_KEY) {
   console.error("❌ No se encontró OPENAI_API_KEY en las variables de entorno");
 }
@@ -56,19 +56,23 @@ app.post("/chat", async (req, res) => {
       ],
     });
 
-    res.json({ reply: completion.choices[0].message });
+    const reply = completion.choices[0]?.message || {
+      role: "assistant",
+      content: "No pude generar una respuesta en este momento.",
+    };
+
+    res.json({ reply });
   } catch (err) {
     console.error("❌ Error al generar respuesta:", err.response?.data || err.message || err);
-    res.status(500).json({ error: "Error al generar respuesta en el servidor" });
+    res.status(500).json({ error: "Error al generar respuesta en el servidor." });
   }
 });
 
-// 👇 si alguien pide / que le dé el index.html
 app.get("/", (req, res) => {
   res.sendFile(path.join(__dirname, "index.html"));
 });
 
-// 🔴 IMPORTANTE para Render: usar process.env.PORT
+// 🔴 IMPORTANTE para Render
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`✅ Servidor escuchando en puerto ${PORT}`);
